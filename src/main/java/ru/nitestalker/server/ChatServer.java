@@ -3,6 +3,7 @@ package ru.nitestalker.server;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.nitestalker.utils.Helper;
+import ru.nitestalker.utils.NetworkUtils;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -22,7 +23,10 @@ public class ChatServer {
                 final int port = getPort(args);
                 LOG.info("Запуск чат-сервера на порту {}", port);
                 server = new ServerSocket(port);
-                LOG.info("Сервер запущен"); // TODO - внешний ip
+                LOG.info("Сервер запущен: " +
+                                "\nЛокальный IP: " + server.getInetAddress() + "\n" +
+                        "\nПорт: " + server.getLocalPort() + "\n" +
+                                "\nПубличный IP: " + NetworkUtils.getPublicIp()); // TODO - внешний ip
                 clientSocket = server.accept(); // ждёт подключений клиентов
                 // после установки связи с клиентом - создание потоков io для общения
                 LOG.debug("Подключился клиент: " + clientSocket.toString());
