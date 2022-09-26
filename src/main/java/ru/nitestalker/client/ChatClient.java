@@ -18,25 +18,33 @@ public class ChatClient {
 
     public static void main(String[] args) {
         String[] checkedArgs = getAddressAndPort(args);
+        String nickname;
         try {
+            reader = new BufferedReader(new InputStreamReader(System.in));
             try {
                 final String ip = checkedArgs[0];
                 final int port = Integer.parseInt(checkedArgs[1]);
                 clientSocket = new Socket(ip, port);
                 LOG.info("Соединение с сервером {}:{} установлено", ip, port);
-                reader = new BufferedReader(new InputStreamReader(System.in));
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-
-                System.out.print("Ввод >>> ");
-                String inputString = reader.readLine();
-                if (inputString.isEmpty()) {
-                    // TODO
+                while (true) {
+                    System.out.print("Введите ваш никнейм: ");
+                    nickname = reader.readLine();
+                    if (nickname.trim().isEmpty())
+                        continue;
+                    else break;
                 }
-                out.write(inputString + "\n"); // Отправка сообщения на сервер
-                out.flush(); // Чистка буфера
+                ReadMsg fromServerThread = new ReadMsg(in); // Поток чтения сообщений с сервера
+                WriteMsg toServerThread = new WriteMsg(out, nickname); // Поток отправки сообщений на сервер
 
-                System.out.println("Ответ сервера: " + in.readLine());
+                fromServerThread.start();
+                toServerThread.start();
+                fromServerThread.join();
+                toServerThread.join();
+
+            } catch (InterruptedException e) {
+                LOG.error(e.getMessage());
             } finally {
                 clientSocket.close();
                 in.close();
@@ -47,7 +55,6 @@ public class ChatClient {
             LOG.error("Ошибка: " + e.getMessage());
         }
     }
-
 
     private static String[] getAddressAndPort(String... args) {
         if (args.length == 0)

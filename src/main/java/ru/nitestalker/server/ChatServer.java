@@ -5,9 +5,13 @@ import org.apache.logging.log4j.Logger;
 import ru.nitestalker.utils.Helper;
 import ru.nitestalker.utils.NetworkUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
+import java.util.List;
 
 public class ChatServer {
     private static Socket clientSocket; // Общение
@@ -15,6 +19,8 @@ public class ChatServer {
     private static BufferedReader in; // поток чтения из сокета
     private static BufferedWriter out; // поток записи в сокет
     private static final Logger LOG = LogManager.getLogger(ChatServer.class);
+
+    public static final List<ServerClientThread> clients = new LinkedList<>();
 
     public static void main(String[] args) {
 
@@ -27,22 +33,10 @@ public class ChatServer {
                                 "\nЛокальный IP: " + server.getInetAddress() + "\n" +
                         "\nПорт: " + server.getLocalPort() + "\n" +
                                 "\nПубличный IP: " + NetworkUtils.getPublicIp()); // TODO - внешний ip
-                clientSocket = server.accept(); // ждёт подключений клиентов
-                // после установки связи с клиентом - создание потоков io для общения
-                LOG.debug("Подключился клиент: " + clientSocket.toString());
-                try {
-                    in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); // От клиента
-                    out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream())); // Клиенту
-
-                    String clientMessage = in.readLine();
-                    System.out.println(clientMessage);
-
-                    out.write("TEST! Сервером принято сообщение от клиента " + clientSocket.toString() + ": " + clientMessage);
-                    out.flush(); // Чистка буфера
-                } finally {
-                    clientSocket.close();
-                    in.close();
-                    out.close();
+                while (true) {
+                    clientSocket = server.accept(); // ждёт подключений клиентов
+                    clients.add(new ServerClientThread(clientSocket)); // Добавляет подключение в список
+                    LOG.info("Подключился клиент: " + clientSocket.toString());
                 }
             } finally {
                 server.close();
